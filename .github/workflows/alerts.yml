@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
+    inputs:
+      test_push:
+        description: "Send one test alert instead of checking the news"
+        type: boolean
+        default: false
 
 # Never run two checks at once; they share the alerted-stories state.
 concurrency:
@@ -55,6 +60,7 @@ jobs:
           MIN_OUTLETS: ${{ vars.MIN_OUTLETS }}
           TOPICS: ${{ vars.TOPICS }}
           DRY_RUN: ${{ vars.DRY_RUN }}
+          TEST_PUSH: ${{ inputs.test_push && '1' || '' }}
           STATE_FILE: state.json
         run: ./alertjob
 

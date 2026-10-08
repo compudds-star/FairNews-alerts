@@ -21,3 +21,6 @@ repository secrets and never appear in logs. Run logs show news headlines only.
 | `APNS_TEAM_ID` | Apple Developer team ID | — |
 
 Secrets: `FAIRNEWS_DEPLOY_KEY`, `DEVICE_TOKEN`, `APNS_KEY`, `APNS_KEY_ID`.
+
+To check that alerts still reach the phone, run the workflow by hand with
+**Send one test alert** checked (Actions › Breaking news alerts › Run workflow).
