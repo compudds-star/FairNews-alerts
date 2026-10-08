@@ -1,0 +1,77 @@
+name: Breaking news alerts
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+# Never run two checks at once; they share the alerted-stories state.
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # only for the keep-alive commit below
+
+jobs:
+  check:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out FairNews (private, read-only deploy key)
+        uses: actions/checkout@v4
+        with:
+          repository: compudds-star/FairNews
+          ssh-key: ${{ secrets.FAIRNEWS_DEPLOY_KEY }}
+          path: app
+
+      - name: Restore compiled job
+        id: bin
+        uses: actions/cache@v4
+        with:
+          path: alertjob
+          key: alertjob-${{ hashFiles('app/FairNews/Core/**', 'app/AlertJob/**') }}
+
+      - name: Build
+        if: steps.bin.outputs.cache-hit != 'true'
+        run: swiftc -O -o alertjob app/FairNews/Core/*.swift app/AlertJob/*.swift
+
+      - name: Restore alerted-stories state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+
+      - name: Check for breaking news
+        env:
+          DEVICE_TOKEN: ${{ secrets.DEVICE_TOKEN }}
+          APNS_KEY: ${{ secrets.APNS_KEY }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          APNS_TEAM_ID: ${{ vars.APNS_TEAM_ID }}
+          APNS_SANDBOX: ${{ vars.APNS_SANDBOX }}
+          MIN_OUTLETS: ${{ vars.MIN_OUTLETS }}
+          TOPICS: ${{ vars.TOPICS }}
+          DRY_RUN: ${{ vars.DRY_RUN }}
+          STATE_FILE: state.json
+        run: ./alertjob
+
+      - name: Save alerted-stories state
+        if: always() && hashFiles('state.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}
+
+      - name: Keep the schedule alive
+        # GitHub pauses scheduled workflows after 60 days without a commit.
+        run: |
+          last=$(git log -1 --format=%ct)
+          if [ $(( ($(date +%s) - last) / 86400 )) -ge 45 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -m "Keep scheduled alerts active"
+            git push
+          fi
