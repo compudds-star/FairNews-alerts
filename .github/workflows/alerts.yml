@@ -1,8 +1,8 @@
 name: Breaking news alerts
 
+# Started every 10 minutes through the GitHub API by a cron job on the Oracle
+# hub (~/fairnews-dispatch.sh). GitHub's own schedule ran only 3-4 times a day.
 on:
-  schedule:
-    - cron: "3-59/10 * * * *"  # off the top of the hour, when GitHub is busiest
   workflow_dispatch:
     inputs:
       test_push:
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write  # only for the keep-alive commit below
+  contents: read
 
 jobs:
   check:
@@ -71,13 +71,3 @@ jobs:
           path: state.json
           key: state-${{ github.run_id }}
 
-      - name: Keep the schedule alive
-        # GitHub pauses scheduled workflows after 60 days without a commit.
-        run: |
-          last=$(git log -1 --format=%ct)
-          if [ $(( ($(date +%s) - last) / 86400 )) -ge 45 ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit --allow-empty -m "Keep scheduled alerts active"
-            git push
-          fi
