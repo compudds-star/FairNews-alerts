@@ -32,6 +32,16 @@ jobs:
           ssh-key: ${{ secrets.FAIRNEWS_DEPLOY_KEY }}
           path: app
 
+      # Phones the app registered itself (one <token>.json file each). If this
+      # fails, alerts still go to the phones in the DEVICE_TOKEN(S) secrets.
+      - name: Check out registered devices (private, read-only deploy key)
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: compudds-star/FairNews-devices
+          ssh-key: ${{ secrets.DEVICES_DEPLOY_KEY }}
+          path: devices
+
       - name: Restore compiled job
         id: bin
         uses: actions/cache@v4
@@ -54,6 +64,7 @@ jobs:
         env:
           DEVICE_TOKEN: ${{ secrets.DEVICE_TOKEN }}
           DEVICE_TOKENS: ${{ secrets.DEVICE_TOKENS }}
+          DEVICES_DIR: devices/devices
           APNS_KEY: ${{ secrets.APNS_KEY }}
           APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
           APNS_TEAM_ID: ${{ vars.APNS_TEAM_ID }}

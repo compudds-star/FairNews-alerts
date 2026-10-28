@@ -23,15 +23,17 @@ repository secrets and never appear in logs. Run logs show news headlines only.
 | `APNS_SANDBOX` | `1` for apps installed from Xcode | `1` |
 | `APNS_TEAM_ID` | Apple Developer team ID | — |
 
-Secrets: `FAIRNEWS_DEPLOY_KEY`, `DEVICE_TOKEN`, `DEVICE_TOKENS`, `APNS_KEY`, `APNS_KEY_ID`.
+Secrets: `FAIRNEWS_DEPLOY_KEY`, `DEVICES_DEPLOY_KEY`, `DEVICE_TOKEN`, `DEVICE_TOKENS`, `APNS_KEY`, `APNS_KEY_ID`.
 
-Every phone in `DEVICE_TOKEN` (the first phone) and `DEVICE_TOKENS` (a comma
-list of the others) gets each alert. To add a phone: in FairNews, Settings ›
-Breaking News › **Copy device token**, then add it to `DEVICE_TOKENS`
-(`gh secret set DEVICE_TOKENS -R compudds-star/FairNews-alerts`). Tokens differ
-per install, so a reinstalled app needs its new token. An alert that reaches at
-least one phone isn't retried; failed sends to a phone show in the run log and
-mark the run as failed.
+Each alert goes to every phone in the private compudds-star/FairNews-devices
+repository (read with the `DEVICES_DEPLOY_KEY` deploy key). The app registers
+itself there on launch once alerts are on (Settings › Breaking News shows
+"Registered"), so a new phone needs nothing beyond turning alerts on. Delete a
+phone's file there to stop alerts to it. Phones can also be listed by hand in
+`DEVICE_TOKEN` (the first phone) or `DEVICE_TOKENS` (a comma list), using
+**Copy device token** in the app. An alert that reaches at least one phone
+isn't retried; failed sends to a phone show in the run log and mark the run as
+failed.
 
 The hub's trigger uses a fine-grained token (this repository only, Actions
 read/write) stored in `~/.fairnews-dispatch-token`. If alerts stop, check
