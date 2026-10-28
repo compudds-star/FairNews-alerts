@@ -53,6 +53,7 @@ jobs:
       - name: Check for breaking news
         env:
           DEVICE_TOKEN: ${{ secrets.DEVICE_TOKEN }}
+          DEVICE_TOKENS: ${{ secrets.DEVICE_TOKENS }}
           APNS_KEY: ${{ secrets.APNS_KEY }}
           APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
           APNS_TEAM_ID: ${{ vars.APNS_TEAM_ID }}

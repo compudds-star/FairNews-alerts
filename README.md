@@ -23,11 +23,19 @@ repository secrets and never appear in logs. Run logs show news headlines only.
 | `APNS_SANDBOX` | `1` for apps installed from Xcode | `1` |
 | `APNS_TEAM_ID` | Apple Developer team ID | — |
 
-Secrets: `FAIRNEWS_DEPLOY_KEY`, `DEVICE_TOKEN`, `APNS_KEY`, `APNS_KEY_ID`.
+Secrets: `FAIRNEWS_DEPLOY_KEY`, `DEVICE_TOKEN`, `DEVICE_TOKENS`, `APNS_KEY`, `APNS_KEY_ID`.
+
+Every phone in `DEVICE_TOKEN` (the first phone) and `DEVICE_TOKENS` (a comma
+list of the others) gets each alert. To add a phone: in FairNews, Settings ›
+Breaking News › **Copy device token**, then add it to `DEVICE_TOKENS`
+(`gh secret set DEVICE_TOKENS -R compudds-star/FairNews-alerts`). Tokens differ
+per install, so a reinstalled app needs its new token. An alert that reaches at
+least one phone isn't retried; failed sends to a phone show in the run log and
+mark the run as failed.
 
 The hub's trigger uses a fine-grained token (this repository only, Actions
 read/write) stored in `~/.fairnews-dispatch-token`. If alerts stop, check
 `~/fairnews-dispatch.log` there; HTTP 401 means the token expired.
 
-To check that alerts still reach the phone, run the workflow by hand with
+To check that alerts still reach every phone, run the workflow by hand with
 **Send one test alert** checked (Actions › Breaking news alerts › Run workflow).
