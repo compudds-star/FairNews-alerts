@@ -1,3 +1,5 @@
 .DS_Store
 alertjob
 state.json
+.build/
+app/

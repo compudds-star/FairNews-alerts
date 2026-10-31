@@ -9,10 +9,15 @@ on:
         description: "Send one test alert instead of checking the news"
         type: boolean
         default: false
+      dry_run:
+        description: "Detect breaking news without sending or saving anything"
+        type: boolean
+        default: false
 
-# Never run two checks at once; they share the alerted-stories state.
+# Never run two checks at once; they share the alerted-stories state. Dry runs
+# touch no state, so they queue separately and can't bump a real check.
 concurrency:
-  group: alerts
+  group: ${{ inputs.dry_run && 'alerts-dry' || 'alerts' }}
   cancel-in-progress: false
 
 permissions:
@@ -20,7 +25,9 @@ permissions:
 
 jobs:
   check:
-    runs-on: macos-latest
+    # Linux: GitHub's largest runner pool. macOS runners ran short on
+    # 2026-10-28 and checks failed or waited in the queue.
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -47,11 +54,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: alertjob
-          key: alertjob-${{ hashFiles('app/FairNews/Core/**', 'app/AlertJob/**') }}
+          key: alertjob-${{ runner.os }}-${{ hashFiles('app/FairNews/Core/**', 'app/AlertJob/**', 'Package.swift', 'Package.resolved') }}
 
+      # Swift comes preinstalled on GitHub's Ubuntu runners. The package builds
+      # the job from app/ and adds swift-crypto (CryptoKit's API) for Linux.
       - name: Build
         if: steps.bin.outputs.cache-hit != 'true'
-        run: swiftc -O -o alertjob app/FairNews/Core/*.swift app/AlertJob/*.swift
+        run: |
+          swift --version
+          swift build -c release
+          cp .build/release/alertjob alertjob
 
       - name: Restore alerted-stories state
         uses: actions/cache/restore@v4
@@ -71,13 +83,13 @@ jobs:
           APNS_SANDBOX: ${{ vars.APNS_SANDBOX }}
           MIN_OUTLETS: ${{ vars.MIN_OUTLETS }}
           TOPICS: ${{ vars.TOPICS }}
-          DRY_RUN: ${{ vars.DRY_RUN }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || vars.DRY_RUN }}
           TEST_PUSH: ${{ inputs.test_push && '1' || '' }}
           STATE_FILE: state.json
         run: ./alertjob
 
       - name: Save alerted-stories state
-        if: always() && hashFiles('state.json') != ''
+        if: always() && !inputs.dry_run && hashFiles('state.json') != ''
         uses: actions/cache/save@v4
         with:
           path: state.json

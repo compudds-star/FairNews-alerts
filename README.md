@@ -5,7 +5,8 @@ iPhone app. Every 10 minutes a cron job on the Oracle hub starts the workflow
 through the GitHub API (`~/fairnews-dispatch.sh`, failures logged to
 `~/fairnews-dispatch.log`; GitHub's own schedule ran only 3-4 times a day). It
 checks out the (private) app repository with
-a read-only deploy key, builds its alert job, and runs it: fetch public news
+a read-only deploy key, builds its alert job on a Linux runner (Swift package in
+`Package.swift`, adding swift-crypto), and runs it: fetch public news
 feeds, group articles into stories, and alert when 5+ outlets from more than
 one side of the spectrum report the same story within 2 hours.
 
@@ -38,6 +39,14 @@ failed.
 The hub's trigger uses a fine-grained token (this repository only, Actions
 read/write) stored in `~/.fairnews-dispatch-token`. If alerts stop, check
 `~/fairnews-dispatch.log` there; HTTP 401 means the token expired.
+
+To test detection without sending or saving anything, run the workflow with
+**Detect breaking news without sending or saving anything** checked.
+
+Some outlets' feeds block GitHub's servers (Cloudflare bot checks), so the job
+doesn't see them: Washington Times and Washington Post on any runner, and Axios
+on Linux. The run log's "Failed:" line lists them. The app on a phone still
+fetches them.
 
 To check that alerts still reach every phone, run the workflow by hand with
 **Send one test alert** checked (Actions › Breaking news alerts › Run workflow).
